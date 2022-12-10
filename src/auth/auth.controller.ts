@@ -1,24 +1,47 @@
-import { Controller, Get, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ParamsLogin } from '../dto/auth';
+import { ParamsLogin, ParamsRegis } from '../dto/auth';
+import { AuthGuard } from '@nestjs/passport';
+import { Request } from 'express';
+import { ResponseSuccess } from '../utils/handle-response-data';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
   @Post('login')
-  login(): string {
-    const data: ParamsLogin = {
-      identifier: 'quanVa',
-      password: '123456',
-    };
-    return this.authService.signIn(data);
+  login(@Body() data: ParamsLogin) {
+    return this.authService.handleSignIn(data);
   }
+
   @Post('regis')
-  register(): string {
-    return this.authService.signUp();
+  register(@Body() data: ParamsRegis) {
+    return this.authService.handleSignUp(data);
   }
+
   @Get('me')
-  profile(): string {
-    return this.authService.getProfile();
+  @UseGuards(AuthGuard('jwt-access'))
+  profile(@Req() request: Request) {
+    return ResponseSuccess(
+      HttpStatus.OK,
+      'Sign profile successful!',
+      request.user,
+    );
+  }
+
+  @Get('refresh-token')
+  @UseGuards(AuthGuard('jwt-refresh'))
+  refreshToken(@Req() request: Request) {
+    return ResponseSuccess(HttpStatus.OK, 'Refresh token successful!', {
+      accessToken: request.user,
+    });
   }
 }
