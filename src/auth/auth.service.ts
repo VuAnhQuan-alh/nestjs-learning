@@ -21,7 +21,10 @@ export class AuthService {
     private jwt: JwtService,
     private config: ConfigService,
   ) {}
-  async handleSignIn(data: ParamsLogin) {
+  async handleSignIn(
+    data: ParamsLogin,
+    handleCookies: (access: string, refresh: string) => void,
+  ) {
     try {
       const { identifier, password } = data;
       const account = await this.userModel.findOne({
@@ -45,6 +48,8 @@ export class AuthService {
 
       const { username, email, content, avatar, _id, confirmed } = account;
       const token = await this.signToken(_id, email);
+      handleCookies(token.accessToken, token.refreshToken);
+
       return ResponseSuccess(HttpStatus.OK, 'Login successful!', {
         user: {
           username,
@@ -53,14 +58,16 @@ export class AuthService {
           avatar,
           confirmed,
         },
-        jwt: { ...token },
       });
     } catch (e) {
       return ResponseError(HttpStatus.FORBIDDEN, 'Sign in failed!', e.message);
     }
   }
 
-  async handleSignUp(data: ParamsRegis) {
+  async handleSignUp(
+    data: ParamsRegis,
+    handleCookies: (access: string, refresh: string) => void,
+  ) {
     try {
       const { username, email, password } = data;
       const hash = await argon.hash(password);
@@ -69,7 +76,10 @@ export class AuthService {
         email,
         hash_password: hash,
       });
+
       const token = await this.signToken(account._id, email);
+      handleCookies(token.accessToken, token.refreshToken);
+
       return ResponseSuccess(
         HttpStatus.CREATED,
         'Created new an account successful!',
@@ -81,7 +91,6 @@ export class AuthService {
             content: account.content,
             confirmed: account.confirmed,
           },
-          jwt: { ...token },
         },
       );
     } catch (e) {
@@ -113,7 +122,7 @@ export class AuthService {
     }
   }
 
-  async verifyRefreshToken(payload: JwtPayloadDto): Promise<string> {
+  async signAccessToken(payload: JwtPayloadDto): Promise<string> {
     try {
       return await this.jwt.signAsync(
         { sub: payload.sub, email: payload.email },
@@ -123,7 +132,6 @@ export class AuthService {
         },
       );
     } catch (e) {
-      console.log(e);
       throw new RequestTimeoutException();
     }
   }

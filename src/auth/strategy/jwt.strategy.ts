@@ -6,15 +6,21 @@ import { JwtPayloadDto } from './index';
 import { InjectModel } from '@nestjs/mongoose';
 import { Users, UsersDocument } from '../schema';
 import { Model } from 'mongoose';
+import { Request } from 'express';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt-access') {
   constructor(
-    private config: ConfigService,
     @InjectModel(Users.name) private userModel: Model<UsersDocument>,
+    private config: ConfigService,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      // jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (request: Request) => {
+          return request?.cookies?.access_token;
+        },
+      ]),
       secretOrKey: config.get<string>('JWT_ACCESS_SECRET'),
     });
   }
