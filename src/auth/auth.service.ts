@@ -98,6 +98,24 @@ export class AuthService {
     }
   }
 
+  async handleProfile(payload: JwtPayloadDto) {
+    try {
+      const { confirmed, username, email, avatar, content } =
+        await this.userModel.findOne({ _id: payload.sub });
+      return ResponseSuccess(HttpStatus.OK, 'Sign profile successful!', {
+        user: {
+          confirmed,
+          username,
+          email,
+          avatar,
+          content,
+        },
+      });
+    } catch (e) {
+      throw new ForbiddenException();
+    }
+  }
+
   async signToken(userId: Types.ObjectId, email: string): Promise<Token> {
     try {
       const payload: JwtPayloadDto = {

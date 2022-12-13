@@ -22,7 +22,7 @@ export class JwtStrategyRefresh extends PassportStrategy(
     });
   }
 
-  validate(payload: JwtPayloadDto) {
+  validate(payload: JwtPayloadDto): Promise<string> {
     return this.authService.signAccessToken(payload);
   }
 }

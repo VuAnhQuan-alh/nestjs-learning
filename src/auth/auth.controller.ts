@@ -14,6 +14,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { ResponseSuccess } from '../utils/handle-response-data';
 import { FastifyReply } from 'fastify';
+import { JwtPayloadDto } from './strategy';
 
 @Controller('auth')
 export class AuthController {
@@ -46,18 +47,19 @@ export class AuthController {
   @Get('me')
   @UseGuards(AuthGuard('jwt-access'))
   profile(@Req() request: Request) {
-    return ResponseSuccess(
-      HttpStatus.OK,
-      'Sign profile successful!',
-      request.user,
-    );
+    const payload: JwtPayloadDto | any = {
+      ...request.user,
+    };
+    return this.authService.handleProfile(payload);
   }
 
   @Get('refresh-token')
   @UseGuards(AuthGuard('jwt-refresh'))
-  refreshToken(@Req() request: Request) {
-    return ResponseSuccess(HttpStatus.OK, 'Refresh token successful!', {
-      accessToken: request.user,
-    });
+  refreshToken(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: FastifyReply,
+  ) {
+    response.setCookie('access_token', `${request.user}`);
+    return ResponseSuccess(HttpStatus.OK, 'Refresh token successful!', null);
   }
 }
